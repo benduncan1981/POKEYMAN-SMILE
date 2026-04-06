@@ -39,14 +39,14 @@ text-align: center;
 font-size: 120px;
 font-weight: bold;
 color: black;
-z-index: 30;
+z-index: 50;
 }
 
 #bennoText {
 width: 340px;
 left: 25px;
 top: 180px;
-z-index: 25;
+z-index: 40;
 display: none;
 }
 
@@ -60,6 +60,7 @@ background: rgba(255,255,255,0.3);
 border-radius: 10px;
 overflow: hidden;
 display: none;
+z-index: 20;
 }
 
 #timerBar {
@@ -76,6 +77,7 @@ height: 16px;
 pointer-events: none;
 animation: sparkle 0.5s ease-out forwards;
 border-radius: 50%;
+z-index: 10; /* always below hand */
 }
 
 @keyframes sparkle {
@@ -97,15 +99,15 @@ font-size: 28px;
 
 <div id="game">
 
-<img id="titleScreen" src="TITLE SCREEN.png" style="width:100%; height:100%;">
+<img id="titleScreen" src="TITLE SCREEN.png" style="width:100%; height:100%; z-index:100;">
 
-<img id="background" src="BACKGROUND.png" style="width:100%; height:100%; display:none;">
-<img id="bennochu" src="BENNOCHU BRUSHING.png" style="width:140px; display:none;">
-<img id="hand" src="poking hand.png" style="width:120px; display:none;">
+<img id="background" src="BACKGROUND.png" style="width:100%; height:100%; display:none; z-index:0;">
+<img id="bennochu" src="BENNOCHU BRUSHING.png" style="width:140px; display:none; z-index:15;">
+<img id="hand" src="poking hand.png" style="width:120px; display:none; z-index:30;">
 
-<img id="startBtn" src="START.png" style="width:120px; bottom:20px; left:10px; display:none;">
-<img id="pauseBtn" src="PAUSE.png" style="width:120px; bottom:20px; left:135px; display:none;">
-<img id="resetBtn" src="RESET.png" style="width:120px; bottom:20px; right:10px; display:none;">
+<img id="startBtn" src="START.png" style="width:120px; bottom:20px; left:10px; display:none; z-index:20;">
+<img id="pauseBtn" src="PAUSE.png" style="width:120px; bottom:20px; left:135px; display:none; z-index:20;">
+<img id="resetBtn" src="RESET.png" style="width:120px; bottom:20px; right:10px; display:none; z-index:20;">
 
 <img id="bennoText" src="BENNOCHU APPEARS TEXT.png">
 
@@ -124,7 +126,7 @@ font-size: 28px;
 
 <script>
 let timer = 120;
-let timerInterval, moveInterval, handInterval, countdownInterval;
+let timerInterval, moveInterval, handInterval, countdownInterval, sparkleInterval;
 let paused = false;
 let chestOpened = false;
 
@@ -165,7 +167,7 @@ function showGame() {
 
 function resetPositions() {
   bennoX = 125;
-  bennoY = 620; // bottom middle above buttons
+  bennoY = 620;
   velX = (Math.random() * 4) - 2;
   velY = bouncePower;
 
@@ -192,6 +194,7 @@ function startCountdown() {
   countdownInterval = setInterval(() => {
     beep.currentTime = 0;
     beep.play();
+
     count--;
     countdownEl.innerText = count;
 
@@ -209,13 +212,22 @@ function startGame() {
 
   timerInterval = setInterval(() => {
     if (paused) return;
+
     timer--;
     timerBar.style.width = (timer / 120 * 100) + "%";
+
+    // countdown beep in last 10 seconds
+    if (timer <= 10 && timer > 0) {
+      beep.currentTime = 0;
+      beep.play();
+    }
+
     if (timer <= 0) endGame();
   }, 1000);
 
   moveInterval = setInterval(moveBenno, 30);
   handInterval = setInterval(moveHand, 20);
+  sparkleInterval = setInterval(dynamicSparkles, 80);
 }
 
 function moveBenno() {
@@ -225,20 +237,17 @@ function moveBenno() {
   bennoX += velX;
   bennoY += velY;
 
-  // walls
   if (bennoX < 0 || bennoX > 250) {
     velX *= -1;
     velX += (Math.random() - 0.5) * 3;
   }
 
-  // floor bounce
   if (bennoY > 650) {
     bennoY = 650;
     velY = bouncePower + (Math.random() * -4);
     velX += (Math.random() - 0.5) * 4;
   }
 
-  // ceiling limit (2/3 screen)
   if (bennoY < 200) {
     bennoY = 200;
     velY *= -0.8;
@@ -259,17 +268,19 @@ function moveHand() {
 
   hand.style.left = hx + "px";
   hand.style.top = hy + "px";
-
-  // constant poking effect
-  spawnSparkles(bennoX + 60, bennoY + 60);
 }
 
-function spawnSparkles(x, y) {
-  for (let i = 0; i < 8; i++) {
+function dynamicSparkles() {
+  if (paused) return;
+
+  // intensity fades over time
+  let intensity = Math.floor((timer / 120) * 10);
+
+  for (let i = 0; i < intensity; i++) {
     let s = document.createElement("div");
     s.className = "sparkle";
-    s.style.left = (x + Math.random()*60 - 30) + "px";
-    s.style.top = (y + Math.random()*60 - 30) + "px";
+    s.style.left = (bennoX + Math.random()*80 - 40) + "px";
+    s.style.top = (bennoY + Math.random()*80 - 40) + "px";
     s.style.background = ["yellow","white","cyan"][Math.floor(Math.random()*3)];
     document.getElementById("game").appendChild(s);
     setTimeout(() => s.remove(), 500);
@@ -280,6 +291,7 @@ function endGame() {
   clearInterval(timerInterval);
   clearInterval(moveInterval);
   clearInterval(handInterval);
+  clearInterval(sparkleInterval);
 
   benno.src = "BENNOCHU CLEAN.png";
 
@@ -314,6 +326,8 @@ function resetGame() {
   clearInterval(moveInterval);
   clearInterval(handInterval);
   clearInterval(countdownInterval);
+  clearInterval(sparkleInterval);
+
   timer = 120;
   timerBar.style.width = "100%";
   paused = false;

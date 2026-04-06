@@ -1,4 +1,20 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=390, height=844, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> <title>Pokeyman Smile</title> <style> body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, height=844, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pokeyman Smile</title>
+<style>
+body {
+  margin: 0;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
 
 #game {
 position: relative;
@@ -6,6 +22,7 @@ width: 390px;
 height: 844px;
 overflow: hidden;
 background: black;
+touch-action: manipulation;
 }
 
 img {
@@ -15,38 +32,274 @@ user-select: none;
 transition: all 0.3s ease;
 }
 
-.center {
-left: 50%;
-transform: translateX(-50%);
-}
-
-#timer {
-position: absolute;
-top: 10px;
-right: 10px;
-color: white;
-font-size: 24px;
-z-index: 10;
-}
-
 #countdown {
 position: absolute;
-top: 40%;
+top: 35%;
 width: 100%;
 text-align: center;
-font-size: 64px;
-color: white;
-z-index: 20;
+font-size: 120px;
+font-weight: bold;
+color: black;
+z-index: 30;
+}
+
+#bennoText {
+width: 320px;
+left: 35px;
+top: 180px;
+z-index: 25;
+display: none;
+}
+
+#timerBarContainer {
+position: absolute;
+top: 20px;
+left: 20px;
+width: 350px;
+height: 20px;
+background: rgba(255,255,255,0.3);
+border-radius: 10px;
+overflow: hidden;
+display: none;
+}
+
+#timerBar {
+width: 100%;
+height: 100%;
+background: limegreen;
+transition: width 1s linear;
+}
+
+.sparkle {
+position: absolute;
+width: 20px;
+height: 20px;
+pointer-events: none;
+animation: sparkle 0.6s ease-out forwards;
+}
+
+@keyframes sparkle {
+0% { transform: scale(0.5); opacity: 1; }
+100% { transform: scale(2); opacity: 0; }
 }
 
 #rewardText {
 position: absolute;
-bottom: 100px;
+bottom: 120px;
 width: 100%;
 text-align: center;
 color: white;
-font-size: 24px;
-}
-</style>
+font-size: 28px;
+} </style>
 
-</head> <body> <div id="game"> <!-- TITLE --> <img id="titleScreen" src="TITLE SCREEN.png" style="width:100%; height:100%;"> <!-- MAIN GAME --> <img id="background" src="BACKGROUND.png" style="width:100%; height:100%; display:none;"> <img id="bennochu" src="BENNOCHU BRUSHING.png" style="width:120px; bottom:150px; left:135px; display:none;"> <img id="bennoText" src="BENNOCHU APPEARS TEXT.png" style="width:200px; top:120px; left:95px; display:none;"> <img id="hand" src="poking hand.png" style="width:80px; display:none;"> <!-- UI --> <img id="startBtn" src="START.png" style="width:100px; bottom:20px; left:20px; display:none;"> <img id="pauseBtn" src="PAUSE.png" style="width:100px; bottom:20px; left:145px; display:none;"> <img id="resetBtn" src="RESET.png" style="width:100px; bottom:20px; right:20px; display:none;"> <div id="timer">2:00</div> <div id="countdown"></div> <!-- REWARD --> <img id="chest" src="CHEST UNOPENED.png" style="width:200px; top:300px; left:95px; display:none;"> <div id="rewardText"></div> </div> <script> let timer = 120; let timerInterval, moveInterval, handInterval, countdownInterval; let paused = false; let chestOpened = false; const title = document.getElementById("titleScreen"); const bg = document.getElementById("background"); const benno = document.getElementById("bennochu"); const hand = document.getElementById("hand"); const startBtn = document.getElementById("startBtn"); const pauseBtn = document.getElementById("pauseBtn"); const resetBtn = document.getElementById("resetBtn"); const timerEl = document.getElementById("timer"); const countdownEl = document.getElementById("countdown"); const chest = document.getElementById("chest"); const rewardText = document.getElementById("rewardText"); const bennoText = document.getElementById("bennoText"); title.onclick = () => { title.style.display = "none"; showGame(); }; function showGame() { bg.style.display = "block"; benno.style.display = "block"; hand.style.display = "block"; startBtn.style.display = "block"; pauseBtn.style.display = "block"; resetBtn.style.display = "block"; bennoText.style.display = "block"; resetPositions(); } function resetPositions() { benno.style.left = "135px"; benno.style.bottom = "150px"; hand.style.left = "50px"; hand.style.top = "500px"; } startBtn.onclick = () => { if (timerInterval) return; startCountdown(); }; pauseBtn.onclick = () => { paused = !paused; }; resetBtn.onclick = resetGame; function startCountdown() { let count = 5; countdownEl.innerText = count; countdownInterval = setInterval(() => { count--; countdownEl.innerText = count; if (count <= 0) { clearInterval(countdownInterval); countdownEl.innerText = ""; startGame(); } }, 1000); } function startGame() { timerInterval = setInterval(() => { if (paused) return; timer--; updateTimer(); if (timer <= 0) endGame(); }, 1000); moveInterval = setInterval(moveBenno, 600); handInterval = setInterval(moveHand, 600); } function updateTimer() { let m = Math.floor(timer / 60); let s = timer % 60; timerEl.innerText = m + ":" + (s < 10 ? "0" : "") + s; } function moveBenno() { if (paused) return; let x = Math.random() * 270; let y = Math.random() * 250; benno.style.left = x + "px"; benno.style.bottom = (150 + y) + "px"; } function moveHand() { if (paused) return; let bx = benno.offsetLeft; let by = benno.offsetTop; hand.style.left = (bx + Math.random() * 40) + "px"; hand.style.top = (by + Math.random() * 40) + "px"; } function endGame() { clearInterval(timerInterval); clearInterval(moveInterval); clearInterval(handInterval); benno.src = "BENNOCHU CLEAN.png"; setTimeout(showReward, 1500); } function showReward() { bg.style.display = "none"; benno.style.display = "none"; hand.style.display = "none"; startBtn.style.display = "none"; pauseBtn.style.display = "none"; resetBtn.style.display = "none"; timerEl.style.display = "none"; bennoText.style.display = "none"; chest.style.display = "block"; rewardText.innerText = "Tap the chest!"; } chest.onclick = () => { if (!chestOpened) { chest.src = "CHEST OPENED.png"; rewardText.innerText = "Well done!"; chestOpened = true; } else { location.reload(); } }; function resetGame() { clearInterval(timerInterval); clearInterval(moveInterval); clearInterval(handInterval); clearInterval(countdownInterval); timer = 120; updateTimer(); paused = false; benno.src = "BENNOCHU BRUSHING.png"; resetPositions(); } </script> </body> </html>
+</head>
+<body>
+
+<div id="game">
+
+<img id="titleScreen" src="TITLE SCREEN.png" style="width:100%; height:100%;">
+
+<img id="background" src="BACKGROUND.png" style="width:100%; height:100%; display:none;">
+<img id="bennochu" src="BENNOCHU BRUSHING.png" style="width:120px; display:none;">
+<img id="hand" src="poking hand.png" style="width:80px; display:none;">
+
+<img id="startBtn" src="START.png" style="width:100px; bottom:20px; left:20px; display:none;">
+<img id="pauseBtn" src="PAUSE.png" style="width:100px; bottom:20px; left:145px; display:none;">
+<img id="resetBtn" src="RESET.png" style="width:100px; bottom:20px; right:20px; display:none;">
+
+<img id="bennoText" src="BENNOCHU APPEARS TEXT.png">
+
+<div id="countdown"></div>
+
+<div id="timerBarContainer">
+  <div id="timerBar"></div>
+</div>
+
+<img id="chest" src="CHEST UNOPENED.png" style="width:200px; top:300px; left:95px; display:none;">
+<div id="rewardText"></div>
+
+<audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+</div>
+
+<script>
+let timer = 120;
+let timerInterval, moveInterval, handInterval, countdownInterval;
+let paused = false;
+let chestOpened = false;
+
+let bennoX = 135, bennoY = 500;
+let velX = 4, velY = -3;
+
+const title = document.getElementById("titleScreen");
+const bg = document.getElementById("background");
+const benno = document.getElementById("bennochu");
+const hand = document.getElementById("hand");
+const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const resetBtn = document.getElementById("resetBtn");
+const countdownEl = document.getElementById("countdown");
+const timerBar = document.getElementById("timerBar");
+const timerBarContainer = document.getElementById("timerBarContainer");
+const chest = document.getElementById("chest");
+const rewardText = document.getElementById("rewardText");
+const bennoText = document.getElementById("bennoText");
+const beep = document.getElementById("beep");
+
+title.onclick = () => {
+  title.style.display = "none";
+  showGame();
+};
+
+function showGame() {
+  bg.style.display = "block";
+  benno.style.display = "block";
+  hand.style.display = "block";
+  startBtn.style.display = "block";
+  pauseBtn.style.display = "block";
+  resetBtn.style.display = "block";
+  resetPositions();
+}
+
+function resetPositions() {
+  bennoX = 135;
+  bennoY = 500;
+  hand.style.left = "50px";
+  hand.style.top = "600px";
+}
+
+startBtn.onclick = () => {
+  if (timerInterval) return;
+  startCountdown();
+};
+
+pauseBtn.onclick = () => paused = !paused;
+resetBtn.onclick = resetGame;
+
+function startCountdown() {
+  let count = 5;
+  bennoText.style.display = "block";
+  countdownEl.innerText = count;
+
+  countdownInterval = setInterval(() => {
+    beep.play();
+    count--;
+    countdownEl.innerText = count;
+    if (count <= 0) {
+      clearInterval(countdownInterval);
+      countdownEl.innerText = "";
+      bennoText.style.display = "none";
+      startGame();
+    }
+  }, 1000);
+}
+
+function startGame() {
+  timerBarContainer.style.display = "block";
+
+  timerInterval = setInterval(() => {
+    if (paused) return;
+    timer--;
+    timerBar.style.width = (timer / 120 * 100) + "%";
+
+    if (timer <= 10) countdownEl.style.color = "red";
+    if (timer <= 0) endGame();
+  }, 1000);
+
+  moveInterval = setInterval(moveBenno, 30);
+  handInterval = setInterval(moveHand, 30);
+}
+
+function moveBenno() {
+  if (paused) return;
+
+  bennoX += velX;
+  bennoY += velY;
+
+  if (bennoX < 0 || bennoX > 270) velX *= -1;
+  if (bennoY < 350 || bennoY > 700) velY *= -1;
+
+  velX += (Math.random() - 0.5) * 0.5;
+  velY += (Math.random() - 0.5) * 0.5;
+
+  benno.style.left = bennoX + "px";
+  benno.style.top = bennoY + "px";
+}
+
+function moveHand() {
+  if (paused) return;
+
+  let hx = hand.offsetLeft;
+  let hy = hand.offsetTop;
+
+  hx += (bennoX - hx) * 0.1;
+  hy += (bennoY - hy) * 0.1;
+
+  hand.style.left = hx + "px";
+  hand.style.top = hy + "px";
+
+  if (Math.abs(hx - bennoX) < 40 && Math.abs(hy - bennoY) < 40) {
+    spawnSparkles(bennoX + 40, bennoY + 40);
+  }
+}
+
+function spawnSparkles(x, y) {
+  for (let i = 0; i < 4; i++) {
+    let s = document.createElement("div");
+    s.className = "sparkle";
+    s.style.left = (x + Math.random()*40 - 20) + "px";
+    s.style.top = (y + Math.random()*40 - 20) + "px";
+    s.style.background = "yellow";
+    document.getElementById("game").appendChild(s);
+    setTimeout(() => s.remove(), 600);
+  }
+}
+
+function endGame() {
+  clearInterval(timerInterval);
+  clearInterval(moveInterval);
+  clearInterval(handInterval);
+
+  benno.src = "BENNOCHU CLEAN.png";
+
+  setTimeout(showReward, 1500);
+}
+
+function showReward() {
+  bg.style.display = "none";
+  benno.style.display = "none";
+  hand.style.display = "none";
+  startBtn.style.display = "none";
+  pauseBtn.style.display = "none";
+  resetBtn.style.display = "none";
+  timerBarContainer.style.display = "none";
+
+  chest.style.display = "block";
+  rewardText.innerText = "Tap the chest!";
+}
+
+chest.onclick = () => {
+  if (!chestOpened) {
+    chest.src = "CHEST OPENED.png";
+    rewardText.innerText = "Well done!";
+    chestOpened = true;
+  } else {
+    location.reload();
+  }
+};
+
+function resetGame() {
+  clearInterval(timerInterval);
+  clearInterval(moveInterval);
+  clearInterval(handInterval);
+  clearInterval(countdownInterval);
+  timer = 120;
+  timerBar.style.width = "100%";
+  paused = false;
+  benno.src = "BENNOCHU BRUSHING.png";
+  resetPositions();
+}
+</script>
+
+</body>
+</html>

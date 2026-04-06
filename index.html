@@ -22,14 +22,13 @@ width: 390px;
 height: 844px;
 overflow: hidden;
 background: black;
-touch-action: manipulation;
 }
 
 img {
 position: absolute;
 user-select: none;
 -webkit-user-drag: none;
-transition: all 0.3s ease;
+transition: all 0.2s ease;
 }
 
 #countdown {
@@ -44,8 +43,8 @@ z-index: 30;
 }
 
 #bennoText {
-width: 320px;
-left: 35px;
+width: 340px;
+left: 25px;
 top: 180px;
 z-index: 25;
 display: none;
@@ -72,15 +71,16 @@ transition: width 1s linear;
 
 .sparkle {
 position: absolute;
-width: 20px;
-height: 20px;
+width: 16px;
+height: 16px;
 pointer-events: none;
-animation: sparkle 0.6s ease-out forwards;
+animation: sparkle 0.5s ease-out forwards;
+border-radius: 50%;
 }
 
 @keyframes sparkle {
 0% { transform: scale(0.5); opacity: 1; }
-100% { transform: scale(2); opacity: 0; }
+100% { transform: scale(2.5); opacity: 0; }
 }
 
 #rewardText {
@@ -100,12 +100,12 @@ font-size: 28px;
 <img id="titleScreen" src="TITLE SCREEN.png" style="width:100%; height:100%;">
 
 <img id="background" src="BACKGROUND.png" style="width:100%; height:100%; display:none;">
-<img id="bennochu" src="BENNOCHU BRUSHING.png" style="width:120px; display:none;">
-<img id="hand" src="poking hand.png" style="width:80px; display:none;">
+<img id="bennochu" src="BENNOCHU BRUSHING.png" style="width:140px; display:none;">
+<img id="hand" src="poking hand.png" style="width:120px; display:none;">
 
-<img id="startBtn" src="START.png" style="width:100px; bottom:20px; left:20px; display:none;">
-<img id="pauseBtn" src="PAUSE.png" style="width:100px; bottom:20px; left:145px; display:none;">
-<img id="resetBtn" src="RESET.png" style="width:100px; bottom:20px; right:20px; display:none;">
+<img id="startBtn" src="START.png" style="width:120px; bottom:20px; left:10px; display:none;">
+<img id="pauseBtn" src="PAUSE.png" style="width:120px; bottom:20px; left:135px; display:none;">
+<img id="resetBtn" src="RESET.png" style="width:120px; bottom:20px; right:10px; display:none;">
 
 <img id="bennoText" src="BENNOCHU APPEARS TEXT.png">
 
@@ -128,8 +128,10 @@ let timerInterval, moveInterval, handInterval, countdownInterval;
 let paused = false;
 let chestOpened = false;
 
-let bennoX = 135, bennoY = 500;
-let velX = 4, velY = -3;
+let bennoX, bennoY;
+let velX = 0, velY = 0;
+let gravity = 0.8;
+let bouncePower = -12;
 
 const title = document.getElementById("titleScreen");
 const bg = document.getElementById("background");
@@ -162,10 +164,16 @@ function showGame() {
 }
 
 function resetPositions() {
-  bennoX = 135;
-  bennoY = 500;
+  bennoX = 125;
+  bennoY = 620; // bottom middle above buttons
+  velX = (Math.random() * 4) - 2;
+  velY = bouncePower;
+
+  benno.style.left = bennoX + "px";
+  benno.style.top = bennoY + "px";
+
   hand.style.left = "50px";
-  hand.style.top = "600px";
+  hand.style.top = "700px";
 }
 
 startBtn.onclick = () => {
@@ -182,9 +190,11 @@ function startCountdown() {
   countdownEl.innerText = count;
 
   countdownInterval = setInterval(() => {
+    beep.currentTime = 0;
     beep.play();
     count--;
     countdownEl.innerText = count;
+
     if (count <= 0) {
       clearInterval(countdownInterval);
       countdownEl.innerText = "";
@@ -201,26 +211,38 @@ function startGame() {
     if (paused) return;
     timer--;
     timerBar.style.width = (timer / 120 * 100) + "%";
-
-    if (timer <= 10) countdownEl.style.color = "red";
     if (timer <= 0) endGame();
   }, 1000);
 
   moveInterval = setInterval(moveBenno, 30);
-  handInterval = setInterval(moveHand, 30);
+  handInterval = setInterval(moveHand, 20);
 }
 
 function moveBenno() {
   if (paused) return;
 
+  velY += gravity;
   bennoX += velX;
   bennoY += velY;
 
-  if (bennoX < 0 || bennoX > 270) velX *= -1;
-  if (bennoY < 350 || bennoY > 700) velY *= -1;
+  // walls
+  if (bennoX < 0 || bennoX > 250) {
+    velX *= -1;
+    velX += (Math.random() - 0.5) * 3;
+  }
 
-  velX += (Math.random() - 0.5) * 0.5;
-  velY += (Math.random() - 0.5) * 0.5;
+  // floor bounce
+  if (bennoY > 650) {
+    bennoY = 650;
+    velY = bouncePower + (Math.random() * -4);
+    velX += (Math.random() - 0.5) * 4;
+  }
+
+  // ceiling limit (2/3 screen)
+  if (bennoY < 200) {
+    bennoY = 200;
+    velY *= -0.8;
+  }
 
   benno.style.left = bennoX + "px";
   benno.style.top = bennoY + "px";
@@ -232,26 +254,25 @@ function moveHand() {
   let hx = hand.offsetLeft;
   let hy = hand.offsetTop;
 
-  hx += (bennoX - hx) * 0.1;
-  hy += (bennoY - hy) * 0.1;
+  hx += (bennoX - hx) * 0.25;
+  hy += (bennoY - hy) * 0.25;
 
   hand.style.left = hx + "px";
   hand.style.top = hy + "px";
 
-  if (Math.abs(hx - bennoX) < 40 && Math.abs(hy - bennoY) < 40) {
-    spawnSparkles(bennoX + 40, bennoY + 40);
-  }
+  // constant poking effect
+  spawnSparkles(bennoX + 60, bennoY + 60);
 }
 
 function spawnSparkles(x, y) {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 8; i++) {
     let s = document.createElement("div");
     s.className = "sparkle";
-    s.style.left = (x + Math.random()*40 - 20) + "px";
-    s.style.top = (y + Math.random()*40 - 20) + "px";
-    s.style.background = "yellow";
+    s.style.left = (x + Math.random()*60 - 30) + "px";
+    s.style.top = (y + Math.random()*60 - 30) + "px";
+    s.style.background = ["yellow","white","cyan"][Math.floor(Math.random()*3)];
     document.getElementById("game").appendChild(s);
-    setTimeout(() => s.remove(), 600);
+    setTimeout(() => s.remove(), 500);
   }
 }
 

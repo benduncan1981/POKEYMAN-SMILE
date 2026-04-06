@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pokeyman Smile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: system-ui, sans-serif;
+    }
+    #game {
+      position: relative;
+      width: 390px;
+      height: 844px;
+      overflow: hidden;
+    }
+    .layer {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .hidden { display: none !important; }
+    img.fullscreen { width: 100%; height: 100%; object-fit: cover; }
+    #ui-buttons {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 20;
+    }
+    #ui-buttons img { height: 48px; cursor: pointer; }
+    #timer-text {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      padding: 4px 10px;
+      background: rgba(0,0,0,0.4);
+      color: #fff;
+      border-radius: 12px;
+      font-size: 16px;
+      z-index: 20;
+    }
+    #reward-layer { flex-direction: column; gap: 16px; }
+    #reward-layer img { max-width: 70%; }
+    #tap-to-open { color: #fff; font-size: 18px; text-shadow: 0 0 4px #000; }
+    #tap-overlay { position: absolute; inset: 0; z-index: 30; }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <!-- Title screen -->
+    <div id="screen-title" class="layer">
+      <img src="TITLE SCREEN.png" class="fullscreen" alt="Pokeyman Smile title" />
+      <div id="tap-overlay"></div>
+    </div>
+
+    <!-- Main brushing screen -->
+    <div id="screen-main" class="layer hidden">
+      <img id="bg-main" src="BACKGROUND.png" class="fullscreen" alt="Background" />
+      <img id="bennochu-sprite" src="BENNOCHU BRUSHING.png"
+           style="position:absolute; bottom:160px; left:50%; transform:translateX(-50%); width:260px;" />
+      <img id="bennochu-title" src="BENNOCHU APPEARS TEXT.png"
+           style="position:absolute; top:40px; left:50%; transform:translateX(-50%); width:320px;" />
+      <div id="timer-text" class="hidden">2:00</div>
+      <div id="ui-buttons" class="hidden">
+        <img id="btn-start" src="START.png" alt="Start" />
+        <img id="btn-pause" src="PAUSE.png" alt="Pause" />
+        <img id="btn-reset" src="RESET.png" alt="Reset" />
+      </div>
+    </div>
+
+    <!-- Reward screen -->
+    <div id="screen-reward" class="layer hidden" style="background:#0008;">
+      <div id="reward-layer" class="layer">
+        <img id="reward-chest" src="CHEST UNOPENED.png" alt="Chest" />
+        <div id="tap-to-open">Tap the chest!</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const screenTitle = document.getElementById('screen-title');
+    const tapOverlay = document.getElementById('tap-overlay');
+    const screenMain = document.getElementById('screen-main');
+    const bennochuSprite = document.getElementById('bennochu-sprite');
+    const bennochuTitle = document.getElementById('bennochu-title');
+    const timerText = document.getElementById('timer-text');
+    const uiButtons = document.getElementById('ui-buttons');
+    const btnStart = document.getElementById('btn-start');
+    const btnPause = document.getElementById('btn-pause');
+    const btnReset = document.getElementById('btn-reset');
+    const screenReward = document.getElementById('screen-reward');
+    const rewardChest = document.getElementById('reward-chest');
+    const tapToOpen = document.getElementById('tap-to-open');
+
+    const TOTAL_SECONDS = 120;
+    let remaining = TOTAL_SECONDS;
+    let timerInterval = null;
+    let running = false;
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return m + ':' + (s < 10 ? '0' + s : s);
+    }
+
+    function showTitleScreen() {
+      screenTitle.classList.remove('hidden');
+      screenMain.classList.add('hidden');
+      screenReward.classList.add('hidden');
+    }
+
+    function showMainScreen() {
+      screenTitle.classList.add('hidden');
+      screenMain.classList.remove('hidden');
+      screenReward.classList.add('hidden');
+      uiButtons.classList.remove('hidden');
+      timerText.classList.remove('hidden');
+      bennochuTitle.classList.remove('hidden');
+      resetState();
+    }
+
+    function showRewardScreen() {
+      screenMain.classList.add('hidden');
+      screenReward.classList.remove('hidden');
+    }
+
+    function resetState() {
+      clearInterval(timerInterval);
+      remaining = TOTAL_SECONDS;
+      timerText.textContent = formatTime(remaining);
+      bennochuSprite.src = "BENNOCHU BRUSHING.png";
+    }
+
+    function startBrushing() {
+      if (running) return;
+      running = true;
+      timerInterval = setInterval(() => {
+        remaining--;
+        timerText.textContent = formatTime(remaining);
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          bennochuSprite.src = "BENNOCHU CLEAN.png";
+          setTimeout(showRewardScreen, 1500);
+        }
+      }, 1000);
+    }
+
+    function pauseBrushing() { running = false; clearInterval(timerInterval); }
+    function resumeBrushing() { if (!running) startBrushing(); }
+
+    tapOverlay.addEventListener('click', showMainScreen);
+    btnStart.addEventListener('click', startBrushing);
+    btnPause.addEventListener('click', pauseBrushing);
+    btnReset.addEventListener('click', resetState);
+
+    rewardChest.addEventListener('click', () => {
+      if (rewardChest.src.includes('CHEST UNOPENED.png')) {
+        rewardChest.src = 'CHEST OPENED.png';
+        tapToOpen.textContent = 'Well done!';
+      } else {
+        showTitleScreen();
+      }
+    });
+
+    showTitleScreen();
+  </script>
+</body>
+</html>
+
